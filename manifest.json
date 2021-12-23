@@ -1,0 +1,10 @@
+{
+  "id": "dev.csabaszabo.craftextension.tablelovecharts",
+  "name": "Table ❤️ Charts",
+  "fileName": "craft-table-love-charts-csabaszabo",
+  "author" : "Csaba Szabo",
+  "author-email" : "csaba@evdb.io",
+  "description" : "Create a nice chart from a table",
+  "api": "0.0.4",
+  "main": "index.html"
+}
