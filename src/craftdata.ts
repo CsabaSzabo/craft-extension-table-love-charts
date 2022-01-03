@@ -1,19 +1,21 @@
-import { CraftBlock, CraftTextBlock, CraftTextBlockStyle } from "@craftdocs/craft-extension-api";
-import { blockWithSomeSubblockLevels } from "./mock/blocks";
+import { CraftTextBlock, CraftTableBlock } from "@craftdocs/craft-extension-api";
+import { blockWithoutTable, blockWithOneTable, blockWithTwoTables } from "./mock/blocks";
 
-export async function getCurrentDocument(isDevMode: boolean): Promise<CraftTextBlock> {
+export async function getCurrentDocumentTables(isDevMode: boolean): Promise<CraftTableBlock[]> {
   const currentDocument = await getCurrentPage(isDevMode);
-  return currentDocument;
+  return currentDocument.subblocks.filter(block => block.type === "tableBlock") as CraftTableBlock[];
 }
 
 async function getCurrentPage(isDevMode: boolean): Promise<CraftTextBlock> {
   if (isDevMode) {
     // DEV mode
-    let mockCurrentDocument = blockWithSomeSubblockLevels;
+    const testTableOptions = [blockWithoutTable, blockWithOneTable, blockWithTwoTables];
+    // randomly select a table from the three mocks
+    const mockCurrentDocument = testTableOptions[Math.floor(Math.random() * testTableOptions.length)];
     return mockCurrentDocument;
   } else {
     // PROD mode
-    let result = await craft.dataApi.getCurrentPage();
+    const result = await craft.dataApi.getCurrentPage();
     if (result.status !== "success") {
       throw new Error(result.error);
     }

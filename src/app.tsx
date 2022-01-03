@@ -2,13 +2,9 @@ import * as React from "react"
 import * as ReactDOM from 'react-dom'
 import {
   DevicePlatform,
-  CraftTextRun,
-  CraftTextBlock,
-  CraftTextBlockInsert,
-  TextStyle,
-  ListStyle,
+  CraftTableBlock,
 } from '@craftdocs/craft-extension-api';
-import { getCurrentDocument } from "./craftdata";
+import { getCurrentDocumentTables } from "./craftdata";
 import { init, track, trackPages, parameters } from "insights-js";
 
 // Constants
@@ -16,10 +12,12 @@ declare const INSIGHTS_PROJECT_KEY: string | null; // from webpack
 declare const IS_DEV_MODE: boolean; // from webpack
 
 // Types
-import { CraftEnv, TLCSettings } from "./types"
+import { CraftEnv, TLCSettings, ChartConfig } from "./types"
 
 // Components
 import { Settings } from "./Settings";
+import { TableSelector } from "./TableSelector";
+import { ChartBuilder } from "./ChartBuilder";
 
 const App: React.FC<{}> = () => {
   const craftEnv = useCraftEnv();
@@ -29,6 +27,14 @@ const App: React.FC<{}> = () => {
   const [documentError, setDocumentError] = React.useState<Error | null>(null);
 
   // TLC content
+  const [documentTables, setDocumentTables] = React.useState<CraftTableBlock[]>([]);
+  const [selectedTable, setSelectedTable] = React.useState<CraftTableBlock | null>(null);
+  const [chartConfig, setChartConfig] = React.useState<ChartConfig>({
+    type: "line",
+    xColumnIndex: 0,
+    series: [],
+    useFirstRowAsSeriesLabels: true,
+  });
   const [settings, setSettings] = React.useState<TLCSettings>({
     insertImage: true
   });
@@ -44,11 +50,12 @@ const App: React.FC<{}> = () => {
 
   function reloadChart() {
     setLoading(true);
-    loadDocumentItems()
-      .then(tableOfContentsRootBlock => {
-        const textSubBlocks = tableOfContentsRootBlock.subblocks as CraftTextBlock[];
-        // TODO: generate chart
-        setCurrentPageId(tableOfContentsRootBlock.id);
+    loadDocumentTables()
+      .then(tableBlocks => {
+        setDocumentTables(tableBlocks);
+
+        // TODO: set current page ID
+        // setCurrentPageId(tableOfContentsRootBlock.id);
       })
       .catch(err => {
         setDocumentError(err);
@@ -79,6 +86,14 @@ const App: React.FC<{}> = () => {
     }
   }
 
+  function onTableSelected(table: CraftTableBlock) {
+    setSelectedTable(table);
+  }
+
+  function onChartConfigChanged(chartConfig: ChartConfig) {
+    setChartConfig(chartConfig);
+  }
+
   return (
     <div id="app">
       <header className={craftEnv.isDarkMode ? 'header-dark' : 'header-light'}>
@@ -101,6 +116,20 @@ const App: React.FC<{}> = () => {
                 settings={settings}
                 onToggleSettingsCheckbox={onToggleSettingsCheckbox}
               />
+
+              <TableSelector
+                isDarkMode={craftEnv.isDarkMode}
+                documentTables={documentTables}
+                onTableSelected={onTableSelected}
+              />
+
+              { selectedTable && (
+                <ChartBuilder
+                  table={selectedTable}
+                  chartConfig={chartConfig}
+                  onChartConfigChanged={onChartConfigChanged}
+                />
+              )}
 
               {
                 <p>TODO: Generated Chart</p>
@@ -135,8 +164,8 @@ function useCraftEnv(): CraftEnv {
   };
 }
 
-async function loadDocumentItems() {
-  return await getCurrentDocument(IS_DEV_MODE);
+async function loadDocumentTables() {
+  return await getCurrentDocumentTables(IS_DEV_MODE);
 }
 
 export function initApp() {
